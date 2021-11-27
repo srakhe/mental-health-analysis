@@ -1,0 +1,22 @@
+#emrStatus {
+    float: right;
+}
+
+.emrToggle {
+    float: right;
+    margin-top: 10px;
+    margin-left: 10px;
+}
+
+h1 {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.optionsForm {
+    margin-right: 50%;
+}
+
+.submitBtn {
+    margin-top: 20px;
+}
