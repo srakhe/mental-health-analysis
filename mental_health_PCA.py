@@ -10,7 +10,7 @@ import sys
 assert sys.version_info >= (3, 5)
 #import plotly.express as px
 
-def main(inputs):
+def main(inputs, outputs):
     pages_schema = types.StructType([
         types.StructField('REF_DATE', types.IntegerType()),#2015
         types.StructField('GEO', types.StringType()),#Canada (excluding territories)
@@ -103,9 +103,11 @@ def main(inputs):
     resultsForHeatmap = resultFinal.groupBy("GEO").pivot("selected_characteristicSelectedCharacteristic").avg('mh_score')
 
     #fig = px.imshow(resultsForHeatmap)
+
     fig.show()
 
     resultsForHeatmap.show(600, truncate=False)
+    resultsForHeatmap.write.csv(outputs)
     #pca_model.transform(data_selected_filtered_pivoted).collect()[0].output
     #pca_column = pca_model.transform(data_selected_filtered_pivoted_filled).collect()#[0]
     # print("PCA Column:")
@@ -114,8 +116,9 @@ def main(inputs):
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
+    outputs = sys.argv[2]
     spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
     assert spark.version >= '3.0' # make sure we have Spark 3.0+
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext
-    main(inputs)
+    main(inputs, outputs)
