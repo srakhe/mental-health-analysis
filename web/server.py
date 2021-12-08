@@ -45,7 +45,6 @@ def dashboard():
     if get_emr_status() == "Running":
         params = request.args["params"]
         params = json.loads(params)
-        print(type(params))
         return render_template("dashboard.html", graph_json=get_graph(params))
     else:
         return redirect(url_for("home"))
