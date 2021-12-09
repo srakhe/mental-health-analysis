@@ -103,7 +103,7 @@ def heatmap_formating(input_dataframe, characterstic_to_study):
     return resultsForHeatmap
 
 
-def main(inputs, outputs, characterstic_to_study):
+def main(inputs, characterstic_to_study):
     pages_schema = types.StructType([
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
@@ -129,7 +129,7 @@ def main(inputs, outputs, characterstic_to_study):
 
     data_loaded = spark.read.csv(inputs, schema=pages_schema, sep=',', header=True).withColumnRenamed(
         'Selected characteristic',
-        'selected_characteristic')  # .withColumnRenamed('Indicators', 'IndicatorsIndicatorsIndicatorsIndicators')
+        'selected_characteristic')
 
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
     all_unique_years = data_selected_filtered_pivoted.select('REF_DATE').distinct().collect()
@@ -139,15 +139,14 @@ def main(inputs, outputs, characterstic_to_study):
         year_val = year_val[0]
         resultFinal = attempt_pca(data_selected_filtered_pivoted_filled, str(year_val))
         resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
-        resultsForHeatmap.repartition(1).write.csv(outputs + str(year_val))
+        resultsForHeatmap.repartition(1).write.csv(str(year_val))
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
-    outputs = sys.argv[2]
-    characterstic_to_study = sys.argv[3]
+    characterstic_to_study = sys.argv[2]
     spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
     assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext
-    main(inputs, outputs, characterstic_to_study)
+    main(inputs, characterstic_to_study)
