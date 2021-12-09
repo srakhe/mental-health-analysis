@@ -1,5 +1,6 @@
 from utils.main import get_static_data, set_question, get_question
 from utils.emr import get_emr_status, start_emr, stop_emr
+from utils.dashboard import handle_question
 from flask import Flask, render_template, request, redirect, url_for
 
 server = Flask(__name__)
@@ -53,7 +54,11 @@ def get_results():
 
 @server.route("/results/")
 def results():
-    return get_question()
+    selected_q = get_question()
+    data = get_static_data()
+    selected_q_value = data.get(selected_q)
+    result_plot = handle_question(selected_q, selected_q_value)
+    return render_template("results.html")
 
 
 if __name__ == "__main__":
