@@ -1,7 +1,6 @@
 import boto3
 import pandas as pd
 from plotly.subplots import make_subplots
-import plotly.express as px
 import plotly.graph_objs as go
 
 BUCKET = "mha-bucket"
