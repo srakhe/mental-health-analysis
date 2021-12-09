@@ -32,7 +32,7 @@ def home():
             return redirect(url_for("loader"))
 
 
-@server.route("/loader")
+@server.route("/loader/")
 def loader():
     if get_emr_status() == "WAITING":
         return redirect(url_for("get_results"))
@@ -40,7 +40,7 @@ def loader():
         return redirect(url_for("home"))
 
 
-@server.route("/get_results", methods=["GET", "POST"])
+@server.route("/get_results/", methods=["GET", "POST"])
 def get_results():
     if request.method == "GET":
         if get_emr_status() == "COMPLETED":
@@ -51,7 +51,7 @@ def get_results():
         return redirect(url_for("results"))
 
 
-@server.route("/results")
+@server.route("/results/")
 def results():
     return get_question()
 
