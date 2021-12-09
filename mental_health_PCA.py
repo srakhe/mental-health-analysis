@@ -102,12 +102,13 @@ def main(inputs, outputs):
     resultFinal.show(600, truncate=False)
     resultsForHeatmap = resultFinal.groupBy("GEO").pivot("selected_characteristicSelectedCharacteristic").avg('mh_score')
 
-    #fig = px.imshow(resultsForHeatmap)
-
-    fig.show()
 
     resultsForHeatmap.show(600, truncate=False)
     resultsForHeatmap.write.csv(outputs)
+    resultsForHeatmapPandas = resultsForHeatmap.toPandas()
+    fig = px.imshow(resultsForHeatmapPandas)
+    fig.show()
+
     #pca_model.transform(data_selected_filtered_pivoted).collect()[0].output
     #pca_column = pca_model.transform(data_selected_filtered_pivoted_filled).collect()#[0]
     # print("PCA Column:")
