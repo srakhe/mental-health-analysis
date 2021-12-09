@@ -57,7 +57,7 @@ def results():
     selected_q = get_question()
     data = get_static_data()
     selected_q_value = data.get(selected_q)
-    result_plot = handle_question(selected_q, selected_q_value)
+    result_plot = handle_question(selected_q)
     return render_template("results.html")
 
 
