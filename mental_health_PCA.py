@@ -98,74 +98,15 @@ def main(inputs, outputs, characterstic_to_study):
     data_loaded = spark.read.csv(inputs, schema=pages_schema, sep = ',', header = True).withColumnRenamed('Selected characteristic', 'selected_characteristic')#.withColumnRenamed('Indicators', 'IndicatorsIndicatorsIndicatorsIndicators')
 
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
-    # Original code to do ETL
-    # data_selected = data_loaded.select('REF_DATE', 'GEO', 'selected_characteristic', 'IndicatorsIndicatorsIndicatorsIndicators', 'Characteristics', 'VALUE', 'STATUS')
-    # data_selected = data_selected.filter(~data_selected.selected_characteristic.startswith('Highest level of education'))
-    #
-    # data_selected_selected = data_selected.filter(data_selected.Characteristics == 'Percent')
-    #
-    # data_selected_selected = data_selected_selected.filter((data_selected_selected.STATUS == 'E') | (functions.isnull(data_selected_selected.STATUS)))
-    #
-    # data_selected_filtered = data_selected_selected.filter((data_selected_selected.IndicatorsIndicatorsIndicatorsIndicators == 'Perceived mental health, very good or excellent') | (data_selected_selected.IndicatorsIndicatorsIndicatorsIndicators == 'Perceived mental health, fair or poor') | (data_selected_selected.IndicatorsIndicatorsIndicatorsIndicators == 'Perceived life stress, most days quite a bit or extremely stressful') | (data_selected_selected.IndicatorsIndicatorsIndicatorsIndicators == 'Mood disorder') | (data_selected_selected.IndicatorsIndicatorsIndicatorsIndicators == 'Sense of belonging to local community, somewhat strong or very strong') | (data_selected_selected.IndicatorsIndicatorsIndicatorsIndicators == 'Life satisfaction, satisfied or very satisfied'))
-    #
-    # data_selected_filtered_pivoted = data_selected_filtered.groupBy("REF_DATE", "GEO", "selected_characteristic").pivot("IndicatorsIndicatorsIndicatorsIndicators").avg("VALUE").orderBy('REF_DATE')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('selected_characteristic', 'selected_characteristicSelectedCharacteristic')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Perceived mental health, very good or excellent', 'good_mental_health')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Perceived mental health, fair or poor', 'poor_mental_health')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Perceived life stress, most days quite a bit or extremely stressful', 'extremely_stressful')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Mood disorder', 'mood_disorder')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Sense of belonging to local community, somewhat strong or very strong', 'high_belonging')
-    # data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Life satisfaction, satisfied or very satisfied', 'high_life_satisftn').cache()
+    all_unique_years = data_selected_filtered_pivoted.select('REF_DATE').distinct().collect()
+    data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
 
-    data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted)
-    # Original code to handle NA values
-    # all_values = data_selected_filtered_pivoted.agg({'good_mental_health': 'avg', 'poor_mental_health': 'avg', 'extremely_stressful': 'avg', 'mood_disorder': 'avg', 'high_belonging': 'avg', 'high_life_satisftn': 'avg'}).collect()[0]
-    #
-    # good_mental_health = all_values['avg(good_mental_health)']
-    # poor_mental_health = all_values['avg(poor_mental_health)']
-    # extremely_stressful = all_values['avg(extremely_stressful)']
-    # mood_disorder = all_values['avg(mood_disorder)']
-    # high_belonging = all_values['avg(high_belonging)']
-    # high_life_satisftn = all_values['avg(high_life_satisftn)']
-    #
-    # data_selected_filtered_pivoted_filled = data_selected_filtered_pivoted.fillna(good_mental_health, subset=["good_mental_health"])
-    # data_selected_filtered_pivoted_filled = data_selected_filtered_pivoted_filled.fillna(poor_mental_health, subset=["poor_mental_health"])
-    # data_selected_filtered_pivoted_filled = data_selected_filtered_pivoted_filled.fillna(extremely_stressful, subset=["extremely_stressful"])
-    # data_selected_filtered_pivoted_filled = data_selected_filtered_pivoted_filled.fillna(mood_disorder, subset=["mood_disorder"])
-    # data_selected_filtered_pivoted_filled = data_selected_filtered_pivoted_filled.fillna(high_belonging, subset=["high_belonging"])
-    # data_selected_filtered_pivoted_filled = data_selected_filtered_pivoted_filled.fillna(high_life_satisftn, subset=["high_life_satisftn"])
-
-    resultFinal = attempt_pca(data_selected_filtered_pivoted_filled, '2020')
-    # original code for PCA
-    # data_assembler = VectorAssembler(inputCols=['good_mental_health', 'poor_mental_health', 'extremely_stressful', 'mood_disorder', 'high_belonging', 'high_life_satisftn'], outputCol="features")
-    # pca = PCA(k=1, inputCol="features", outputCol="pca_features")
-    # preprocessing_pipeline = Pipeline(stages=[data_assembler, pca])
-    # pca_model = preprocessing_pipeline.fit(data_selected_filtered_pivoted_filled)
-    #
-    #
-    # result =  pca_model.transform(data_selected_filtered_pivoted_filled)
-    # result = result.filter(result['REF_DATE'] == '2020').select('GEO', 'selected_characteristic', 'pca_features')#.withColumn("mh_score", result["pca_features"][1])#.withColumn("mh_score", result.pca_features)
-    # scaler = MinMaxScaler(inputCol="pca_features", outputCol="mh_score_output", max=100.0, min=1.0)
-    # scalerModel = scaler.fit(result)
-    # scaledResults = scalerModel.transform(result)
-    #
-    # firstelement=functions.udf(lambda v:float(v[0]),FloatType())
-    # resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO', 'selected_characteristic', 'mh_score')
-
-    resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
-    # Original code for HeatMap formating
-    # resultsForHeatmap = resultFinal.groupBy("GEO").pivot("selected_characteristic").avg('mh_score')
-    # if(characterstic_to_study == 'Household income'):
-    #     resultsForHeatmap = resultsForHeatmap.select('GEO', 'Household income, first quintile', 'Household income, second quintile', 'Household income, third quintile', 'Household income, fourth quintile', 'Household income, fifth quintile')
-    # elif(characterstic_to_study == 'Highest level of education'):
-    #     resultsForHeatmap = resultsForHeatmap.select('GEO', 'Highest level of education, less than secondary school graduation', 'Highest level of education, post-secondary certificate/diploma or university degree', 'Highest level of education, secondary school graduation, no post-secondary education')
-    # else:
-    #     print("Wrong characterstic_to_study")
-
-
-    resultsForHeatmap.show(600, truncate=False)
-
-    resultsForHeatmap.repartition(1).write.csv(outputs)
+    for year_val in all_unique_years:
+        year_val = year_val[0]
+        resultFinal = attempt_pca(data_selected_filtered_pivoted_filled, str(year_val))
+        resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
+        resultsForHeatmap.show(600, truncate=False)
+        resultsForHeatmap.repartition(1).write.csv(outputs + str(year_val))
 
 
 
@@ -175,7 +116,7 @@ if __name__ == '__main__':
     outputs = sys.argv[2]
     characterstic_to_study = sys.argv[3]
     spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
-    assert spark.version >= '3.0' # make sure we have Spark 3.0+
+    assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext
     main(inputs, outputs, characterstic_to_study)
