@@ -102,7 +102,7 @@ def main(inputs, outputs):
     resultFinal.show(600, truncate=False)
     resultsForHeatmap = resultFinal.groupBy("GEO").pivot("selected_characteristicSelectedCharacteristic").avg('mh_score')
 
-
+    resultsForHeatmap = resultsForHeatmap.select('GEO', 'Household income, first quintile', 'Household income, second quintile', 'Household income, third quintile', 'Household income, fourth quintile', 'Household income, fifth quintile')
     resultsForHeatmap.show(600, truncate=False)
     resultsForHeatmap.write.csv(outputs)
     resultsForHeatmapPandas = resultsForHeatmap.toPandas()
