@@ -1,8 +1,7 @@
-from utils.main import get_static_data
+from utils.main import get_static_data, set_question, get_question
 from utils.emr import get_emr_status, start_emr, stop_emr
-from utils.map import get_graph
+from utils.dashboard import handle_question
 from flask import Flask, render_template, request, redirect, url_for
-import json
 
 server = Flask(__name__)
 
@@ -10,12 +9,10 @@ server = Flask(__name__)
 @server.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "GET":
+        set_question("")
         questions, years, regions, incomes = get_static_data()
         params = {
             "questions": questions,
-            "years": years,
-            "regions": regions,
-            "incomes": incomes,
             "emr_status": get_emr_status()
         }
         questions = dict(questions)
@@ -31,23 +28,37 @@ def home():
         elif "refresh" in request.form:
             return redirect(url_for("home"))
         else:
-            params = {
-                "question": request.form["quesValue"],
-                "year": request.form["yearValue"],
-                "region": request.form["regionValue"],
-                "income": request.form["incomeValue"]
-            }
-            return redirect(url_for("dashboard", params=json.dumps(params)))
+            question = request.form["quesValue"]
+            set_question(question)
+            return redirect(url_for("loader"))
 
 
-@server.route("/dashboard")
-def dashboard():
-    if get_emr_status() == "Running":
-        params = request.args["params"]
-        params = json.loads(params)
-        return render_template("dashboard.html", graph_json=get_graph(params))
+@server.route("/loader/")
+def loader():
+    if get_emr_status() == "WAITING":
+        return redirect(url_for("get_results"))
     else:
         return redirect(url_for("home"))
+
+
+@server.route("/get_results/", methods=["GET", "POST"])
+def get_results():
+    if request.method == "GET":
+        if get_emr_status() == "COMPLETED":
+            return render_template("get_results.html", show="")
+        else:
+            return render_template("get_results.html", show="disabled")
+    else:
+        return redirect(url_for("results"))
+
+
+@server.route("/results/")
+def results():
+    selected_q = get_question()
+    data = get_static_data()
+    selected_q_value = data.get(selected_q)
+    result_plot = handle_question(selected_q)
+    return render_template("results.html")
 
 
 if __name__ == "__main__":
