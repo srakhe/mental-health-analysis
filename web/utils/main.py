@@ -11,3 +11,14 @@ def get_static_data():
     with open("data/static/incomes.json", "r") as i_file:
         incomes = json.load(i_file)
     return questions, years, regions, incomes
+
+
+def set_question(q_value):
+    with open("data/static/question.txt", "w+") as selected_question:
+        selected_question.write(q_value)
+
+
+def get_question():
+    with open("data/static/question.txt", "r") as selected_question:
+        q_value = selected_question.read()
+    return q_value
