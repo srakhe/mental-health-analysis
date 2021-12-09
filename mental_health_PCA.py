@@ -47,6 +47,7 @@ def handle_na(input_dataframe):
     return input_dataframe
 
 def attempt_pca(input_dataframe, year):
+    input_dataframe = input_dataframe.filter(input_dataframe['REF_DATE'] == year)
     data_assembler = VectorAssembler(inputCols=['good_mental_health', 'poor_mental_health', 'extremely_stressful', 'mood_disorder', 'high_belonging', 'high_life_satisftn'], outputCol="features")
     pca = PCA(k=1, inputCol="features", outputCol="pca_features")
     preprocessing_pipeline = Pipeline(stages=[data_assembler, pca])
@@ -54,7 +55,7 @@ def attempt_pca(input_dataframe, year):
     pca_model = preprocessing_pipeline.fit(input_dataframe)
     result =  pca_model.transform(input_dataframe)
 
-    result = result.filter(result['REF_DATE'] == year).select('GEO', 'selected_characteristic', 'pca_features')
+    result = result.select('GEO', 'selected_characteristic', 'pca_features')
     scaler = MinMaxScaler(inputCol="pca_features", outputCol="mh_score_output", max=100.0, min=1.0)
     scalerModel = scaler.fit(result)
     scaledResults = scalerModel.transform(result)
