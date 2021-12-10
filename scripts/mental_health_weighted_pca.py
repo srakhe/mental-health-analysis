@@ -60,7 +60,7 @@ def attempt_pca(input_dataframe):
     result = result.withColumn('pca_features_mod', firstelementabs("pca_features")).select('GEO', 'selected_characteristic', 'pca_features_mod')
 
     data_assembler2 = VectorAssembler(inputCols=['pca_features_mod'], outputCol="features")
-    result_vector = data_assembler.transform(input_dataframe)
+    result_vector = data_assembler2.transform(result)
 
     scaler = MinMaxScaler(inputCol="features", outputCol="mh_score_output", max=100.0, min=1.0)
     scalerModel = scaler.fit(result_vector)
@@ -123,7 +123,7 @@ def main(inputs, characterstic_to_study):
         year_val = year_val[0]
         resultFinal = get_mh_score(data_selected_filtered_pivoted_filled, str(year_val))
         resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
-        resultsForHeatmap.show(600, truncate=False)
+        #resultsForHeatmap.show(600, truncate=False)
         resultsForHeatmap.repartition(1).write.csv(str(year_val))
 
 
