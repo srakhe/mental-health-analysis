@@ -1,7 +1,6 @@
 import boto3
 import pandas as pd
 from plotly.subplots import make_subplots
-import plotly.express as px
 import plotly.graph_objs as go
 
 BUCKET = "mha-bucket"
@@ -32,14 +31,14 @@ def gen_heatmap(df_dict):
             figure,
             row=row, col=col
         )
-    return fig
+    fig.show()
 
 
 def handle_question(q_number):
     if q_number == "q1":
         df_dict = {}
         my_bucket = s3.Bucket(BUCKET)
-        for object_summary in my_bucket.objects.filter(Prefix="q1/"):
+        for object_summary in my_bucket.objects.filter(Prefix="temp/"):
             file_name = object_summary.key
             if file_name.endswith('.csv'):
                 obj = s3_client.get_object(Bucket=BUCKET, Key=file_name)
