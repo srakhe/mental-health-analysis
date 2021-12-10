@@ -17,7 +17,7 @@ def data_etl(input_dataframe, selected_characteristic):
      data_selected_selected = data_selected_selected.filter((data_selected_selected.STATUS == 'E') | (functions.isnull(data_selected_selected.STATUS)))
      data_selected_filtered = data_selected_selected.filter((data_selected_selected.Indicators == 'Perceived mental health, very good or excellent') | (data_selected_selected.Indicators == 'Perceived mental health, fair or poor') | (data_selected_selected.Indicators == 'Perceived life stress, most days quite a bit or extremely stressful') | (data_selected_selected.Indicators == 'Mood disorder') | (data_selected_selected.Indicators == 'Sense of belonging to local community, somewhat strong or very strong') | (data_selected_selected.Indicators == 'Life satisfaction, satisfied or very satisfied'))
 
-     data_selected_filtered_pivoted = data_selected_filtered.groupBy("GEO").pivot("Indicators").avg("VALUE")
+     data_selected_filtered_pivoted = data_selected_filtered.groupBy("REF_DATE", "GEO").pivot("Indicators").avg("VALUE")
      data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Perceived mental health, very good or excellent', 'good_mental_health')
      data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Perceived mental health, fair or poor', 'poor_mental_health')
      data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed('Perceived life stress, most days quite a bit or extremely stressful', 'extremely_stressful')
@@ -48,7 +48,6 @@ def handle_na(input_dataframe):
     return input_dataframe
 
 def get_mh_score(input_dataframe):
-
     input_dataframe = input_dataframe.cache()
 
     data_assembler = VectorAssembler(inputCols=['good_mental_health', 'poor_mental_health', 'extremely_stressful', 'mood_disorder', 'high_belonging', 'high_life_satisftn'], outputCol="features")
@@ -56,7 +55,7 @@ def get_mh_score(input_dataframe):
     matrix = Correlation.corr(df_vector, "features").collect()[0]["pearson({})".format("features")].toArray()
 
     results = input_dataframe.withColumn('mh_score', input_dataframe.good_mental_health*matrix[5][0] + input_dataframe.poor_mental_health*matrix[5][1] + input_dataframe.extremely_stressful*matrix[5][2] + input_dataframe.mood_disorder*matrix[5][3] + input_dataframe.high_belonging*matrix[5][4])# + input_dataframe.high_life_satisftn)
-    results = results.select('GEO', 'mh_score')
+    results = results.select('GEO', 'REF_DATE', 'mh_score')
 
     data_assembler2 = VectorAssembler(inputCols=['mh_score'], outputCol="features")
     df_vector2 = data_assembler2.transform(results)
@@ -65,8 +64,13 @@ def get_mh_score(input_dataframe):
     scaledResults = scalerModel.transform(df_vector2)
 
     firstelement = functions.udf(lambda v:float(v[0]),FloatType())
-    resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO', 'mh_score')
+    resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO', 'REF_DATE', 'mh_score')
     return resultFinal
+
+def bargraph_formating(input_dataframe):
+    resultsForHeatmap = input_dataframe.groupBy("GEO").pivot("REF_DATE").avg('mh_score')
+    resultsForHeatmap = resultsForHeatmap.select("GEO", "2015", "2016", "2017", "2018", "2019", "2020")
+    return resultsForHeatmap
 
 def main(inputs, characterstic_to_study):
     pages_schema = types.StructType([
@@ -93,9 +97,11 @@ def main(inputs, characterstic_to_study):
 
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
     data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
+
     resultFinal = get_mh_score(data_selected_filtered_pivoted_filled)
-    resultFinal.show(600, truncate=False)
-    resultFinal.repartition(1).write.csv(str(year_val))
+    resultsForHeatmap = bargraph_formating(resultFinal)
+    resultsForHeatmap.show(600, truncate=False)
+    resultsForHeatmap.repartition(1).write.csv()
 
 
 
