@@ -2,6 +2,8 @@ import boto3
 import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
+import plotly.express as px
+import json
 
 BUCKET = "mha-bucket"
 
@@ -34,7 +36,7 @@ def gen_heatmap(df_dict):
     fig.show()
 
 
-def get_data_from_s3(q_number):
+def get_income_data(q_number):
     df_dict = {}
     my_bucket = s3.Bucket(BUCKET)
     for object_summary in my_bucket.objects.filter(Prefix=f"{q_number}/"):
@@ -48,10 +50,39 @@ def get_data_from_s3(q_number):
     return df_dict
 
 
+def get_overview_data(q_number):
+    my_bucket = s3.Bucket(BUCKET)
+    for object_summary in my_bucket.objects.filter(Prefix=f"{q_number}/"):
+        file_name = object_summary.key
+        if file_name.endswith('.csv'):
+            obj = s3_client.get_object(Bucket=BUCKET, Key=file_name)
+            my_df = pd.read_csv(obj['Body'],
+                                names=["name", "score"])
+            return my_df
+
+
+def generate_geoplot(data):
+    with open("data/geodata/canada_provinces.geojson", "r+") as canadaJson:
+        canada_json = json.load(canadaJson)
+    fig = px.choropleth(data,
+                        geojson=canada_json,
+                        featureidkey='properties.name',
+                        locations='name',  # column in dataframe
+                        color='score',  # dataframe
+                        color_continuous_scale='Viridis',
+                        title='Mental Health Scores in Canada (Excluding territories)'
+                        )
+    fig.update_geos(fitbounds="locations", visible=False)
+    fig.show()
+
+
 def handle_question(q_number):
     if q_number == "q1":
-        df_dict = get_data_from_s3(q_number)
+        df_dict = get_income_data(q_number)
         return gen_heatmap(df_dict)
     if q_number == "q2":
-        df_dict = get_data_from_s3(q_number)
+        df_dict = get_income_data(q_number)
         return gen_heatmap(df_dict)
+    if q_number == "q3":
+        data = get_overview_data(q_number)
+        generate_geoplot(data)
