@@ -117,7 +117,7 @@ def main(inputs, characterstic_to_study):
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
     data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
     resultFinal = get_mh_score(data_selected_filtered_pivoted_filled)
-    resultFinal.show(600, truncate=False)
+    # resultFinal.show(600, truncate=False)
     resultFinal.repartition(1).write.mode("overwrite").csv("overall")
 
 

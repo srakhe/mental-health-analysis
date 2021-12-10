@@ -126,3 +126,28 @@ def run_step_on_cluster(question):
             ]
         )
         return response
+    if question == "q3":
+        response = client.add_job_flow_steps(
+            JobFlowId=get_emr_id(),
+            Steps=[
+                {
+                    'Name': 'Setup Debugging',
+                    'ActionOnFailure': 'TERMINATE_CLUSTER',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['state-pusher-script']
+                    }
+                },
+                {
+                    'Name': 'Run Spark',
+                    'ActionOnFailure': 'CANCEL_AND_WAIT',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_overview.py',
+                                 's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q3/',
+                                 '0']
+                    }
+                }
+            ]
+        )
+        return response
