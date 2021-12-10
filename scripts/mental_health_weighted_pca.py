@@ -7,7 +7,7 @@ from pyspark.sql.types import FloatType
 from pyspark.ml.feature import VectorAssembler, PCA
 from pyspark.ml.stat import Correlation
 from pyspark.ml.feature import MinMaxScaler
-from pyspark.sql.functions import abs
+#from pyspark.sql.functions import abs
 
 import sys
 assert sys.version_info >= (3, 5)
@@ -56,10 +56,15 @@ def attempt_pca(input_dataframe):
 
     pca_model = preprocessing_pipeline.fit(input_dataframe)
     result =  pca_model.transform(input_dataframe)
-    result = result.withColumn('pca_features_mod', result.pca_features).select('GEO', 'selected_characteristic', 'pca_features_mod')
-    scaler = MinMaxScaler(inputCol="pca_features_mod", outputCol="mh_score_output", max=100.0, min=1.0)
-    scalerModel = scaler.fit(result)
-    scaledResults = scalerModel.transform(result)
+    firstelementabs = functions.udf(lambda v:abs(float(v[0])),FloatType())
+    result = result.withColumn('pca_features_mod', firstelementabs("pca_features")).select('GEO', 'selected_characteristic', 'pca_features_mod')
+
+    data_assembler2 = VectorAssembler(inputCols=['pca_features_mod'], outputCol="features")
+    result_vector = data_assembler.transform(input_dataframe)
+
+    scaler = MinMaxScaler(inputCol="features", outputCol="mh_score_output", max=100.0, min=1.0)
+    scalerModel = scaler.fit(result_vector)
+    scaledResults = scalerModel.transform(result_vector)
 
     firstelement = functions.udf(lambda v:float(v[0]),FloatType())
     resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO', 'selected_characteristic', 'mh_score')
