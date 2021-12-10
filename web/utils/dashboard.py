@@ -70,7 +70,7 @@ def generate_geoplot(data):
                         locations='name',  # column in dataframe
                         color='score',  # dataframe
                         color_continuous_scale='Viridis',
-                        title='Mental Health Scores in Canada (Excluding territories)'
+                        title='Mental Health Scores in Canada (Excluding territories) for 5 years.'
                         )
     fig.update_geos(fitbounds="locations", visible=False)
     fig.show()
