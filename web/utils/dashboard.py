@@ -34,16 +34,24 @@ def gen_heatmap(df_dict):
     fig.show()
 
 
+def get_data_from_s3(q_number):
+    df_dict = {}
+    my_bucket = s3.Bucket(BUCKET)
+    for object_summary in my_bucket.objects.filter(Prefix=f"{q_number}/"):
+        file_name = object_summary.key
+        if file_name.endswith('.csv'):
+            obj = s3_client.get_object(Bucket=BUCKET, Key=file_name)
+            my_df = pd.read_csv(obj['Body'],
+                                names=["Regions", "First Quintile", "Second Quintile", "Third Quintile",
+                                       "Fourth Quintile", "Fifth Quintile"], index_col="Regions")
+            df_dict[file_name.split('/')[1]] = my_df
+    return df_dict
+
+
 def handle_question(q_number):
     if q_number == "q1":
-        df_dict = {}
-        my_bucket = s3.Bucket(BUCKET)
-        for object_summary in my_bucket.objects.filter(Prefix="temp/"):
-            file_name = object_summary.key
-            if file_name.endswith('.csv'):
-                obj = s3_client.get_object(Bucket=BUCKET, Key=file_name)
-                my_df = pd.read_csv(obj['Body'],
-                                    names=["Regions", "First Quintile", "Second Quintile", "Third Quintile",
-                                           "Fourth Quintile", "Fifth Quintile"], index_col="Regions")
-                df_dict[file_name.split('/')[1]] = my_df
+        df_dict = get_data_from_s3(q_number)
+        return gen_heatmap(df_dict)
+    if q_number == "q2":
+        df_dict = get_data_from_s3(q_number)
         return gen_heatmap(df_dict)
