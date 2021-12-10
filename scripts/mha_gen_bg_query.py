@@ -133,7 +133,7 @@ def main(inputs, output, characterstic_to_study):
         resultFinal = get_mh_score(data_selected_filtered_pivoted_filled, str(characteristic_val))
         resultsForHeatmap = bargraph_formating(resultFinal)
         resultsForHeatmap.show(600, truncate=False)
-        resultsForHeatmap.repartition(1).write.csv(output + str(characteristic_val))
+        resultsForHeatmap.repartition(1).write.mode("overwrite").csv(output + str(characteristic_val))
 
 
 if __name__ == '__main__':

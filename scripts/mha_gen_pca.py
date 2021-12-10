@@ -147,7 +147,6 @@ def main(inputs, output, characterstic_to_study):
         year_val = year_val[0]
         resultFinal = attempt_pca(data_selected_filtered_pivoted_filled, str(year_val))
         resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
-        # resultsForHeatmap.show(500)
         resultsForHeatmap.repartition(1).write.mode("overwrite").csv(output + str(year_val))
 
 
