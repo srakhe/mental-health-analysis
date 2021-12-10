@@ -86,7 +86,7 @@ def get_mh_score(input_dataframe):
     return resultFinal
 
 
-def main(inputs, characterstic_to_study):
+def main(inputs, output, characterstic_to_study):
     pages_schema = types.StructType([
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
@@ -117,8 +117,7 @@ def main(inputs, characterstic_to_study):
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
     data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
     resultFinal = get_mh_score(data_selected_filtered_pivoted_filled)
-    # resultFinal.show(600, truncate=False)
-    resultFinal.repartition(1).write.mode("overwrite").csv("overall")
+    resultFinal.repartition(1).write.mode("overwrite").csv(output + "overall")
 
 
 if __name__ == '__main__':
@@ -129,8 +128,8 @@ if __name__ == '__main__':
         characterstic_to_study = "Household income"
     elif characterstic_to_study == "1":
         characterstic_to_study = "Highest level of education"
-    spark = SparkSession.builder.appName('Mental Health Overall Weighted Sum').getOrCreate()
+    spark = SparkSession.builder.appName('Mental Health Weighted Sum: Overall').getOrCreate()
     assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext
-    main(inputs, characterstic_to_study)
+    main(inputs, output, characterstic_to_study)
