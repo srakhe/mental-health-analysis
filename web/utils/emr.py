@@ -93,7 +93,7 @@ def run_step_on_cluster(question):
                     'ActionOnFailure': 'CANCEL_AND_WAIT',
                     'HadoopJarStep': {
                         'Jar': 'command-runner.jar',
-                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_pca.py',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_weightedSum.py',
                                  's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q1/',
                                  '0']
                     }
@@ -118,7 +118,7 @@ def run_step_on_cluster(question):
                     'ActionOnFailure': 'CANCEL_AND_WAIT',
                     'HadoopJarStep': {
                         'Jar': 'command-runner.jar',
-                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_pca.py',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_weightedSum.py',
                                  's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q2/',
                                  '1']
                     }

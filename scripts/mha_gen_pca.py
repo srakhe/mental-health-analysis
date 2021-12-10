@@ -1,7 +1,6 @@
 from pyspark.sql import SparkSession, functions, types
 from pyspark.ml import Pipeline
 from pyspark.sql.types import FloatType
-
 from pyspark.ml.feature import VectorAssembler, PCA
 from pyspark.ml.feature import MinMaxScaler
 import sys

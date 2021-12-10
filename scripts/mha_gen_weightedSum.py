@@ -11,7 +11,10 @@ assert sys.version_info >= (3, 5)
 def data_etl(input_dataframe, selected_characteristic):
     data_selected = input_dataframe.select('REF_DATE', 'GEO', 'selected_characteristic', 'Indicators',
                                            'Characteristics', 'VALUE', 'STATUS')
+    # data_selected.show(100)
+    # print(selected_characteristic)
     data_selected = data_selected.filter(data_selected.selected_characteristic.startswith(selected_characteristic))
+    # data_selected.show(100)
     data_selected_selected = data_selected.filter(data_selected.Characteristics == 'Percent')
     data_selected_selected = data_selected_selected.filter(
         (data_selected_selected.STATUS == 'E') | (functions.isnull(data_selected_selected.STATUS)))
@@ -23,7 +26,8 @@ def data_etl(input_dataframe, selected_characteristic):
                 data_selected_selected.Indicators == 'Sense of belonging to local community, somewhat strong or very strong') | (
                 data_selected_selected.Indicators == 'Life satisfaction, satisfied or very satisfied'))
 
-    data_selected_filtered_pivoted = data_selected_filtered.groupBy("GEO").pivot("Indicators").avg("VALUE")
+    data_selected_filtered_pivoted = data_selected_filtered.groupBy("REF_DATE", "GEO", "selected_characteristic").pivot(
+        "Indicators").avg("VALUE").orderBy('REF_DATE')
     data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed(
         'Perceived mental health, very good or excellent', 'good_mental_health')
     data_selected_filtered_pivoted = data_selected_filtered_pivoted.withColumnRenamed(
@@ -61,7 +65,9 @@ def handle_na(input_dataframe):
     return input_dataframe
 
 
-def get_mh_score(input_dataframe):
+def get_mh_score(input_dataframe, year):
+    input_dataframe = input_dataframe.filter(input_dataframe['REF_DATE'] == year).cache()
+
     data_assembler = VectorAssembler(
         inputCols=['good_mental_health', 'poor_mental_health', 'extremely_stressful', 'mood_disorder', 'high_belonging',
                    'high_life_satisftn'], outputCol="features")
@@ -73,7 +79,7 @@ def get_mh_score(input_dataframe):
                                              2] + input_dataframe.mood_disorder * matrix[5][
                                              3] + input_dataframe.high_belonging * matrix[5][
                                              4])  # + input_dataframe.high_life_satisftn)
-    results = results.select('GEO', 'mh_score')
+    results = results.select('GEO', 'selected_characteristic', 'mh_score')
 
     data_assembler2 = VectorAssembler(inputCols=['mh_score'], outputCol="features")
     df_vector2 = data_assembler2.transform(results)
@@ -82,11 +88,31 @@ def get_mh_score(input_dataframe):
     scaledResults = scalerModel.transform(df_vector2)
 
     firstelement = functions.udf(lambda v: float(v[0]), FloatType())
-    resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO', 'mh_score')
+    resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO',
+                                                                                               'selected_characteristic',
+                                                                                               'mh_score')
     return resultFinal
 
 
-def main(inputs, characterstic_to_study):
+def heatmap_formating(input_dataframe, characterstic_to_study):
+    resultsForHeatmap = input_dataframe.groupBy("GEO").pivot("selected_characteristic").avg('mh_score')
+    if (characterstic_to_study == 'Household income'):
+        resultsForHeatmap = resultsForHeatmap.select('GEO', 'Household income, first quintile',
+                                                     'Household income, second quintile',
+                                                     'Household income, third quintile',
+                                                     'Household income, fourth quintile',
+                                                     'Household income, fifth quintile')
+    elif (characterstic_to_study == 'Highest level of education'):
+        resultsForHeatmap = resultsForHeatmap.select('GEO',
+                                                     'Highest level of education, less than secondary school graduation',
+                                                     'Highest level of education, post-secondary certificate/diploma or university degree',
+                                                     'Highest level of education, secondary school graduation, no post-secondary education')
+    else:
+        print("Wrong characterstic_to_study")
+    return resultsForHeatmap
+
+
+def main(inputs, output, characterstic_to_study):
     pages_schema = types.StructType([
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
@@ -112,20 +138,30 @@ def main(inputs, characterstic_to_study):
 
     data_loaded = spark.read.csv(inputs, schema=pages_schema, sep=',', header=True).withColumnRenamed(
         'Selected characteristic',
-        'selected_characteristic')  # .withColumnRenamed('Indicators', 'IndicatorsIndicatorsIndicatorsIndicators')
+        'selected_characteristic')
 
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
+    all_unique_years = data_selected_filtered_pivoted.select('REF_DATE').distinct().collect()
     data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
-    resultFinal = get_mh_score(data_selected_filtered_pivoted_filled)
-    resultFinal.show(600, truncate=False)
-    resultFinal.repartition(1).write.csv(str(year_val))
+
+    for year_val in all_unique_years:
+        year_val = year_val[0]
+        resultFinal = get_mh_score(data_selected_filtered_pivoted_filled, str(year_val))
+        resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
+        resultsForHeatmap.show(600, truncate=False)
+        resultsForHeatmap.repartition(1).write.mode("overwrite").csv(output + str(year_val))
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
-    characterstic_to_study = sys.argv[2]
+    output = sys.argv[2]
+    characterstic_to_study = sys.argv[3]
+    if characterstic_to_study == "0":
+        characterstic_to_study = "Household income"
+    elif characterstic_to_study == "1":
+        characterstic_to_study = "Highest level of education"
     spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
     assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext
-    main(inputs, characterstic_to_study)
+    main(inputs, output, characterstic_to_study)
