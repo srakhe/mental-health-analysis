@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession, functions, types
 from pyspark.ml import Pipeline
 from pyspark.sql.types import FloatType
+
 from pyspark.ml.feature import VectorAssembler, PCA
 from pyspark.ml.feature import MinMaxScaler
 import sys
@@ -103,7 +104,7 @@ def heatmap_formating(input_dataframe, characterstic_to_study):
     return resultsForHeatmap
 
 
-def main(inputs, characterstic_to_study):
+def main(inputs, output, characterstic_to_study):
     pages_schema = types.StructType([
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
@@ -139,14 +140,19 @@ def main(inputs, characterstic_to_study):
         year_val = year_val[0]
         resultFinal = attempt_pca(data_selected_filtered_pivoted_filled, str(year_val))
         resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
-        resultsForHeatmap.repartition(1).write.csv(str(year_val))
+        resultsForHeatmap.repartition(1).write.mode("overwrite").csv(output + str(year_val))
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
-    characterstic_to_study = sys.argv[2]
+    output = sys.argv[2]
+    characterstic_to_study = sys.argv[3]
+    if characterstic_to_study == "0":
+        characterstic_to_study = "Household income"
+    elif characterstic_to_study == "1":
+        characterstic_to_study = "Highest level of education"
     spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
     assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext
-    main(inputs, characterstic_to_study)
+    main(inputs, output, characterstic_to_study)
