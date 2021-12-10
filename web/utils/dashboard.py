@@ -36,16 +36,23 @@ def gen_heatmap(df_dict):
     fig.show()
 
 
-def get_income_data(q_number):
+def get_mha_data(q_number, type):
     df_dict = {}
     my_bucket = s3.Bucket(BUCKET)
     for object_summary in my_bucket.objects.filter(Prefix=f"{q_number}/"):
         file_name = object_summary.key
         if file_name.endswith('.csv'):
             obj = s3_client.get_object(Bucket=BUCKET, Key=file_name)
-            my_df = pd.read_csv(obj['Body'],
-                                names=["Regions", "First Quintile", "Second Quintile", "Third Quintile",
-                                       "Fourth Quintile", "Fifth Quintile"], index_col="Regions")
+            if type == "income":
+                my_df = pd.read_csv(obj['Body'],
+                                    names=["Regions", "First Quintile", "Second Quintile", "Third Quintile",
+                                           "Fourth Quintile", "Fifth Quintile"], index_col="Regions")
+            else:
+                my_df = pd.read_csv(obj['Body'],
+                                    names=["Regions", "Less than secondary school graduation",
+                                           "Post-secondary certificate",
+                                           "Secondary school graduation, no post-secondary education"],
+                                    index_col="Regions")
             df_dict[file_name.split('/')[1]] = my_df
     return df_dict
 
@@ -73,15 +80,15 @@ def generate_geoplot(data):
                         title='Mental Health Scores in Canada (Excluding territories) for 5 years.'
                         )
     fig.update_geos(fitbounds="locations", visible=False)
-    fig.show()
+    fig.show(width=1200, height=1200)
 
 
 def handle_question(q_number):
     if q_number == "q1":
-        df_dict = get_income_data(q_number)
+        df_dict = get_mha_data(q_number, type="income")
         return gen_heatmap(df_dict)
     if q_number == "q2":
-        df_dict = get_income_data(q_number)
+        df_dict = get_mha_data(q_number, type="edu")
         return gen_heatmap(df_dict)
     if q_number == "q3":
         data = get_overview_data(q_number)
