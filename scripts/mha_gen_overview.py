@@ -91,10 +91,10 @@ def main(inputs, characterstic_to_study):
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
         types.StructField('GEO', types.StringType()),
-        # Specifies the Canadian Provience in which the survey respondent resides. 11 Unique values in total.
+        # Specifies the Canadian Province in which the survey respondent resides. 11 Unique values in total.
         types.StructField('DGUID', types.StringType()),  # Unique Identifier
         types.StructField('Selected characteristic', types.StringType()),
-        # Income or education category the respondant belongs to (5 income level category, 3 education level category)
+        # Income or education category the respondent belongs to (5 income level category, 3 education level category)
         types.StructField('Indicators', types.StringType()),  # Self Reporting of health status of respondant
         types.StructField('Characteristics', types.StringType()),  # Measure of value(Percentage, number, etc)
         types.StructField('UOM', types.StringType()),  # Number (6 values)
@@ -112,19 +112,24 @@ def main(inputs, characterstic_to_study):
 
     data_loaded = spark.read.csv(inputs, schema=pages_schema, sep=',', header=True).withColumnRenamed(
         'Selected characteristic',
-        'selected_characteristic')  # .withColumnRenamed('Indicators', 'IndicatorsIndicatorsIndicatorsIndicators')
+        'selected_characteristic')
 
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
     data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
     resultFinal = get_mh_score(data_selected_filtered_pivoted_filled)
     resultFinal.show(600, truncate=False)
-    resultFinal.repartition(1).write.csv(str(year_val))
+    resultFinal.repartition(1).write.mode("overwrite").csv("overall")
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
-    characterstic_to_study = sys.argv[2]
-    spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
+    output = sys.argv[2]
+    characterstic_to_study = sys.argv[3]
+    if characterstic_to_study == "0":
+        characterstic_to_study = "Household income"
+    elif characterstic_to_study == "1":
+        characterstic_to_study = "Highest level of education"
+    spark = SparkSession.builder.appName('Mental Health Overall Weighted Sum').getOrCreate()
     assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext

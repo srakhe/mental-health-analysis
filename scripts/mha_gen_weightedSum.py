@@ -78,7 +78,7 @@ def get_mh_score(input_dataframe, year):
         0] + input_dataframe.poor_mental_health * matrix[5][1] + input_dataframe.extremely_stressful * matrix[5][
                                              2] + input_dataframe.mood_disorder * matrix[5][
                                              3] + input_dataframe.high_belonging * matrix[5][
-                                             4])  # + input_dataframe.high_life_satisftn)
+                                             4])
     results = results.select('GEO', 'selected_characteristic', 'mh_score')
 
     data_assembler2 = VectorAssembler(inputCols=['mh_score'], outputCol="features")
@@ -117,10 +117,10 @@ def main(inputs, output, characterstic_to_study):
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
         types.StructField('GEO', types.StringType()),
-        # Specifies the Canadian Provience in which the survey respondent resides. 11 Unique values in total.
+        # Specifies the Canadian Province in which the survey respondent resides. 11 Unique values in total.
         types.StructField('DGUID', types.StringType()),  # Unique Identifier
         types.StructField('Selected characteristic', types.StringType()),
-        # Income or education category the respondant belongs to (5 income level category, 3 education level category)
+        # Income or education category the respondent belongs to (5 income level category, 3 education level category)
         types.StructField('Indicators', types.StringType()),  # Self Reporting of health status of respondant
         types.StructField('Characteristics', types.StringType()),  # Measure of value(Percentage, number, etc)
         types.StructField('UOM', types.StringType()),  # Number (6 values)
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         characterstic_to_study = "Household income"
     elif characterstic_to_study == "1":
         characterstic_to_study = "Highest level of education"
-    spark = SparkSession.builder.appName('Mental Health PCA').getOrCreate()
+    spark = SparkSession.builder.appName('Mental Health Weighted Sum').getOrCreate()
     assert spark.version >= '3.0'
     spark.sparkContext.setLogLevel('WARN')
     sc = spark.sparkContext

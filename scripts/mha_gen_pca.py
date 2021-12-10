@@ -108,10 +108,10 @@ def main(inputs, output, characterstic_to_study):
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
         types.StructField('GEO', types.StringType()),
-        # Specifies the Canadian Provience in which the survey respondent resides. 11 Unique values in total.
+        # Specifies the Canadian Province in which the survey respondent resides. 11 Unique values in total.
         types.StructField('DGUID', types.StringType()),  # Unique Identifier
         types.StructField('Selected characteristic', types.StringType()),
-        # Income or education category the respondant belongs to (5 income level category, 3 education level category)
+        # Income or education category the respondent belongs to (5 income level category, 3 education level category)
         types.StructField('Indicators', types.StringType()),  # Self Reporting of health status of respondant
         types.StructField('Characteristics', types.StringType()),  # Measure of value(Percentage, number, etc)
         types.StructField('UOM', types.StringType()),  # Number (6 values)
