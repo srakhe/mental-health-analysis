@@ -23,6 +23,9 @@ def start_emr():
     response = client.run_job_flow(
         Name="mha-cluster-2x-m4.2xl",
         ReleaseLabel="emr-6.4.0",
+        Applications=[
+            {'Name': 'Spark'}
+        ],
         Instances={
             "MasterInstanceType": "m4.2xlarge",
             "SlaveInstanceType": "m4.2xlarge",
@@ -69,3 +72,32 @@ def get_emr_status():
             return f"Invalid cluster id {cluster_id}"
         else:
             return cluster_info.get("Cluster").get("Status").get("State")
+
+
+def run_step_on_cluster(question):
+    client = get_client()
+    if question == "q1":
+        response = client.add_job_flow_steps(
+            JobFlowId=get_emr_id(),
+            Steps=[
+                {
+                    'Name': 'Setup Debugging',
+                    'ActionOnFailure': 'TERMINATE_CLUSTER',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['state-pusher-script']
+                    }
+                },
+                {
+                    'Name': 'Run Spark',
+                    'ActionOnFailure': 'CANCEL_AND_WAIT',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_pca.py',
+                                 's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q1/',
+                                 '0']
+                    }
+                }
+            ]
+        )
+        return response
