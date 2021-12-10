@@ -90,19 +90,9 @@ def get_mh_score(input_dataframe, characteristic):
     return resultFinal
 
 
-# def heatmap_formating(input_dataframe):
-#     resultsForHeatmap = input_dataframe.groupBy("GEO").pivot("selected_characteristic").avg('mh_score')
-#     if(characterstic_to_study == 'Household income'):
-#         resultsForHeatmap = resultsForHeatmap.select('GEO', 'Household income, first quintile', 'Household income, second quintile', 'Household income, third quintile', 'Household income, fourth quintile', 'Household income, fifth quintile')
-#     elif(characterstic_to_study == 'Highest level of education'):
-#         resultsForHeatmap = resultsForHeatmap.select('GEO', 'Highest level of education, less than secondary school graduation', 'Highest level of education, post-secondary certificate/diploma or university degree', 'Highest level of education, secondary school graduation, no post-secondary education')
-#     else:
-#         print("Wrong characterstic_to_study")
-#     return resultsForHeatmap
-
 def bargraph_formating(input_dataframe):
     resultsForHeatmap = input_dataframe.groupBy("GEO").pivot("REF_DATE").avg('mh_score')
-    resultsForHeatmap = resultsForHeatmap.select("GEO", "2015", "2016", "2017", "2018", "2019", "2020")
+    resultsForHeatmap = resultsForHeatmap.select("GEO", "2015", "2016", "2017", "2018", "2019", "2020").orderBy("GEO")
     return resultsForHeatmap
 
 

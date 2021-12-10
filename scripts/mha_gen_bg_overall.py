@@ -91,7 +91,7 @@ def get_mh_score(input_dataframe):
 
 def bargraph_formating(input_dataframe):
     resultsForHeatmap = input_dataframe.groupBy("GEO").pivot("REF_DATE").avg('mh_score')
-    resultsForHeatmap = resultsForHeatmap.select("GEO", "2015", "2016", "2017", "2018", "2019", "2020")
+    resultsForHeatmap = resultsForHeatmap.select("GEO", "2015", "2016", "2017", "2018", "2019", "2020").orderBy("GEO")
     return resultsForHeatmap
 
 
