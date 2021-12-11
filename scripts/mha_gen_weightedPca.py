@@ -72,11 +72,17 @@ def attempt_pca(input_dataframe):
 
     pca_model = preprocessing_pipeline.fit(input_dataframe)
     result = pca_model.transform(input_dataframe)
-    result = result.withColumn('pca_features_mod', result.pca_features).select('GEO', 'selected_characteristic',
-                                                                               'pca_features_mod')
-    scaler = MinMaxScaler(inputCol="pca_features_mod", outputCol="mh_score_output", max=100.0, min=1.0)
-    scalerModel = scaler.fit(result)
-    scaledResults = scalerModel.transform(result)
+    firstelementabs = functions.udf(lambda v: abs(float(v[0])), FloatType())
+    result = result.withColumn('pca_features_mod', firstelementabs("pca_features")).select('GEO',
+                                                                                           'selected_characteristic',
+                                                                                           'pca_features_mod')
+
+    data_assembler2 = VectorAssembler(inputCols=['pca_features_mod'], outputCol="features")
+    result_vector = data_assembler2.transform(result)
+
+    scaler = MinMaxScaler(inputCol="features", outputCol="mh_score_output", max=100.0, min=1.0)
+    scalerModel = scaler.fit(result_vector)
+    scaledResults = scalerModel.transform(result_vector)
 
     firstelement = functions.udf(lambda v: float(v[0]), FloatType())
     resultFinal = scaledResults.withColumn("mh_score", firstelement("mh_score_output")).select('GEO',
@@ -132,10 +138,10 @@ def main(inputs, output, characterstic_to_study):
         types.StructField('REF_DATE', types.IntegerType()),
         # Specifies years in which data was collected. Unique values(6): 2015, 2016, 2017, 2018, 2019, 2020
         types.StructField('GEO', types.StringType()),
-        # Specifies the Canadian Province in which the survey respondent resides. 11 Unique values in total.
+        # Specifies the Canadian Provience in which the survey respondent resides. 11 Unique values in total.
         types.StructField('DGUID', types.StringType()),  # Unique Identifier
         types.StructField('Selected characteristic', types.StringType()),
-        # Income or education category the respondent belongs to (5 income level category, 3 education level category)
+        # Income or education category the respondant belongs to (5 income level category, 3 education level category)
         types.StructField('Indicators', types.StringType()),  # Self Reporting of health status of respondant
         types.StructField('Characteristics', types.StringType()),  # Measure of value(Percentage, number, etc)
         types.StructField('UOM', types.StringType()),  # Number (6 values)
@@ -153,7 +159,7 @@ def main(inputs, output, characterstic_to_study):
 
     data_loaded = spark.read.csv(inputs, schema=pages_schema, sep=',', header=True).withColumnRenamed(
         'Selected characteristic',
-        'selected_characteristic')
+        'selected_characteristic')  # .withColumnRenamed('Indicators', 'IndicatorsIndicatorsIndicatorsIndicators')
     data_selected_filtered_pivoted = data_etl(data_loaded, characterstic_to_study).cache()
     all_unique_years = data_selected_filtered_pivoted.select('REF_DATE').distinct().collect()
     data_selected_filtered_pivoted_filled = handle_na(data_selected_filtered_pivoted).cache()
@@ -162,8 +168,7 @@ def main(inputs, output, characterstic_to_study):
         year_val = year_val[0]
         resultFinal = get_mh_score(data_selected_filtered_pivoted_filled, str(year_val))
         resultsForHeatmap = heatmap_formating(resultFinal, characterstic_to_study)
-        # resultsForHeatmap.show(600, truncate=False)
-        resultsForHeatmap.repartition(1).write.mode("overwrite").csv(output + str(year_val))
+        resultsForHeatmap.repartition(1).write.csv(output + str(year_val))
 
 
 if __name__ == '__main__':

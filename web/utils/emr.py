@@ -76,6 +76,7 @@ def get_emr_status():
 
 def run_step_on_cluster(question):
     client = get_client()
+    response = ""
     if question == "q1":
         response = client.add_job_flow_steps(
             JobFlowId=get_emr_id(),
@@ -100,7 +101,6 @@ def run_step_on_cluster(question):
                 }
             ]
         )
-        return response
     if question == "q2":
         response = client.add_job_flow_steps(
             JobFlowId=get_emr_id(),
@@ -125,7 +125,6 @@ def run_step_on_cluster(question):
                 }
             ]
         )
-        return response
     if question == "q3":
         response = client.add_job_flow_steps(
             JobFlowId=get_emr_id(),
@@ -150,4 +149,76 @@ def run_step_on_cluster(question):
                 }
             ]
         )
-        return response
+    if question == "q4":
+        response = client.add_job_flow_steps(
+            JobFlowId=get_emr_id(),
+            Steps=[
+                {
+                    'Name': 'Setup Debugging',
+                    'ActionOnFailure': 'TERMINATE_CLUSTER',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['state-pusher-script']
+                    }
+                },
+                {
+                    'Name': 'Run Spark',
+                    'ActionOnFailure': 'CANCEL_AND_WAIT',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_bg_query.py',
+                                 's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q4/',
+                                 '0']
+                    }
+                }
+            ]
+        )
+    if question == "q5":
+        response = client.add_job_flow_steps(
+            JobFlowId=get_emr_id(),
+            Steps=[
+                {
+                    'Name': 'Setup Debugging',
+                    'ActionOnFailure': 'TERMINATE_CLUSTER',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['state-pusher-script']
+                    }
+                },
+                {
+                    'Name': 'Run Spark',
+                    'ActionOnFailure': 'CANCEL_AND_WAIT',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_bg_query.py',
+                                 's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q5/',
+                                 '1']
+                    }
+                }
+            ]
+        )
+    if question == "q6":
+        response = client.add_job_flow_steps(
+            JobFlowId=get_emr_id(),
+            Steps=[
+                {
+                    'Name': 'Setup Debugging',
+                    'ActionOnFailure': 'TERMINATE_CLUSTER',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['state-pusher-script']
+                    }
+                },
+                {
+                    'Name': 'Run Spark',
+                    'ActionOnFailure': 'CANCEL_AND_WAIT',
+                    'HadoopJarStep': {
+                        'Jar': 'command-runner.jar',
+                        'Args': ['spark-submit', 's3://mha-bucket/scripts/mha_gen_bg_overall.py',
+                                 's3://mha-bucket/data/13100097.csv', 's3://mha-bucket/q6/',
+                                 '0']
+                    }
+                }
+            ]
+        )
+    return response
