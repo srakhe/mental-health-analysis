@@ -50,8 +50,8 @@ def get_mha_data(q_number, type):
             else:
                 my_df = pd.read_csv(obj['Body'],
                                     names=["Regions", "Less than secondary school graduation",
-                                           "Post-secondary certificate",
-                                           "Secondary school graduation, no post-secondary education"],
+                                           "Secondary school graduation, no post-secondary education",
+                                           "Post-secondary certificate"],
                                     index_col="Regions")
             df_dict[file_name.split('/')[1]] = my_df
     return df_dict
