@@ -105,8 +105,8 @@ def heatmap_formating(input_dataframe, characterstic_to_study):
     elif (characterstic_to_study == 'Highest level of education'):
         resultsForHeatmap = resultsForHeatmap.select('GEO',
                                                      'Highest level of education, less than secondary school graduation',
-                                                     'Highest level of education, post-secondary certificate/diploma or university degree',
-                                                     'Highest level of education, secondary school graduation, no post-secondary education')
+                                                     'Highest level of education, secondary school graduation, no post-secondary education',
+                                                     'Highest level of education, post-secondary certificate/diploma or university degree')
     else:
         print("Wrong characterstic_to_study")
     return resultsForHeatmap
